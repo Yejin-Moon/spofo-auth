@@ -1,0 +1,152 @@
+# [secret 설명]
+# AWS_ACCESS_KEY_ID -> EC2 ssh 접속 시 필요한 IAM 계정의 access key
+
+# AWS_SECRET_ACCESS_KEY -> EC2 ssh 접속 시 필요한 IAM 계정의 secret access key
+
+# AWS_SG_ID -> EC2 ssh 접속 시 github action이 접속하는데 보안 그룹의 포트를 허용해야 한다. 그 때 사용할 보안 그룹의 id
+#	 ex. sg-0d6597ee8a903bfe0
+
+# AWS_SSH_HOST -> EC2 ssh 접속 시 필요한 HOST (ec2의 ssh 연결 방법에 보면 나와있음)
+#	 ex. 3.39.88.164 or ec2-3-39-88-164.ap-northeast-2.compute.amazonaws.com
+
+# AWS_SSH_KEY -> EC2 ssh 접속 시 필요한 KEY (pem key라면 메모장으로 열어서 내용을 전부 입력해주면 됨)
+#	 ex. -----BEGIN RSA PRIVATE KEY-----
+#	     키 내용...
+#	     -----END RSA PRIVATE KEY-----
+
+# AWS_SSH_USERNAME -> EC2 ssh 접속 시 필요한 USERNAME (ec2의 ssh 연결 방법에 보면 나와있음)
+#	 ex. ubuntu
+
+# DOCKERHUB_TOKEN -> 도커 허브에 접속하기 위한 토큰 값
+#	 ex. dckr_pat_opSlXXXXJ_FlqczXXXXXXX
+
+# DOCKERHUB_USERNAME -> 도커 허브에 접속하기 위한 id 값
+#	 ex. 도커 허브에 로그인할 때의 계정을 입력
+
+name: spofo-auth CI / CD with Gradle
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # github action의 가상환경에 내 프로젝트를 체크아웃하기
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # github action의 가상환경에 빌드를 위해 jdk 17 설치하기
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      # gradle로 빌드할 의존성 준비하기
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      # gradle로 빌드하여 jar 파일 생성하기
+      - name: Execute Gradle build
+        run: ./gradlew bootJar
+
+      # job은 별도의 가상환경에서 실행되므로
+      # job 사이에 파일 공유를 위해 빌드 결과물인 jar 파일을 upload함
+      - name: Upload jar file
+        uses: actions/upload-artifact@master
+        with:
+          name: build-result
+          path: ./build/libs
+
+      - name: Upload Dockerfile
+        uses: actions/upload-artifact@master
+        with:
+          name: Dockerfile
+          path: ./Dockerfile
+  # 참고 사이트
+  # https://docs.github.com/ko/actions/publishing-packages/publishing-docker-images
+  push_to_registry:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      # 이전 job에서 업로드 한 jar 파일을 다운로드하여 docker image 생성 시 사용
+      - name: Download jar file
+        uses: actions/download-artifact@master
+        with:
+          name: build-result
+          path: build/libs
+
+      - name: Download Dockerfile
+        uses: actions/download-artifact@master
+        with:
+          name: Dockerfile
+          path: ./
+
+      # 생성한 이미지를 도커허브에 올리기 전에 도커허브에 로그인하기
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 도커허브에 생성한 이미지를 푸시하기
+      - name: Build and push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: jangwonjun/spofo:latest # 변경해야 할 값
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: push_to_registry
+    steps:
+
+      # github action의 IP가 수시로 바뀌므로
+      # 그 ip를 ec2의 인바운드 규칙에서 허용해야 하므로
+      # github action의 IP를 얻어온다.
+      - name: Get Github Actions IP
+        id: ip
+        uses: haythem/public-ip@v1.3
+
+      # ec2 IAM 계정의 access key, secret key의 계정정보 등록
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      # 보안 그룹 ID를 입력하여 github action이 EC2에 접근할 수 있도록 설정
+      - name: Add Github Actions IP to Security group
+        run: |
+          aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: SSH Commands
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.AWS_SSH_HOST }}
+          username: ${{ secrets.AWS_SSH_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+
+          # 스크립트 중간에 실패하면 다음 스크립트를 실행하지 않는 옵션 true로 주기
+          script_stop: true
+          # 변경해야 할 값
+          # script에 작성된 명령어를 도커 허브에 push한 이미지를 받도록 변경해야 함
+          script: |
+            sudo docker pull jangwonjun/spofo:latest
+            sudo docker rm -f spofo-app
+            sudo docker run -p 8080:8080 -itd --name spofo-app jangwonjun/spofo:latest
+
+      # 등록했던 인바운드 규칙을 삭제하기
+      - name: Remove Github Actions IP From Security Group
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
