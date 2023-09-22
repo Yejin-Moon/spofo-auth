@@ -16,7 +16,7 @@ public class MemberService {
     public String getStock() {
         restClient = RestClient.create();
         return restClient.get()
-                .uri("https://www.stock.spofo.net/test/callStock")
+                .uri("https://www.stock.spofo.net/test/callStock:8080")
                 .retrieve()
                 .body(String.class);
     }
@@ -24,7 +24,7 @@ public class MemberService {
     public String getPortfolio() {
         restClient = RestClient.create();
         return restClient.get()
-                .uri("https://www.portfolio.spofo.net/test/callPortfolio")
+                .uri("https://www.portfolio.spofo.net/test/callPortfolio:8080")
                 .retrieve()
                 .body(String.class);
     }
