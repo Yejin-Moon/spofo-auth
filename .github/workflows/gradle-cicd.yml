@@ -103,7 +103,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: jangwonjun/spofo:latest # 변경해야 할 값
+          tags: mooo0on/spofo-auth:latest # 변경해야 할 값
 
   deploy:
     runs-on: ubuntu-latest
@@ -142,9 +142,9 @@ jobs:
           # 변경해야 할 값
           # script에 작성된 명령어를 도커 허브에 push한 이미지를 받도록 변경해야 함
           script: |
-            sudo docker pull jangwonjun/spofo:latest
-            sudo docker rm -f spofo-app
-            sudo docker run -p 8080:8080 -itd --name spofo-app jangwonjun/spofo:latest
+            sudo docker pull mooo0on/spofo-auth:latest
+            sudo docker rm -f spofo-auth-app
+            sudo docker run -p 8080:8080 -itd --name spofo-auth-app mooo0on/spofo-auth:latest
 
       # 등록했던 인바운드 규칙을 삭제하기
       - name: Remove Github Actions IP From Security Group
