@@ -1,6 +1,7 @@
 package net.spofo.auth.controller;
 
 import lombok.RequiredArgsConstructor;
+import net.spofo.auth.entity.Member;
 import net.spofo.auth.repository.MemberRepository;
 import net.spofo.auth.service.MemberService;
 import org.springframework.http.HttpHeaders;
@@ -20,8 +21,12 @@ public class MemberController {
     @GetMapping("/auth/members/search")
     public Long searchMember(@RequestHeader HttpHeaders httpHeaders) {
         String searchedMember = httpHeaders.getFirst("authorization");
-        Long id = memberRepository.findBySocialId(searchedMember).getId();
-        return id;
+        Member m = memberRepository.findBySocialId(searchedMember);
+        if (m == null) {
+            throw new IllegalArgumentException("id를 찾을 수 없습니다.");
+        } else {
+            return m.getId();
+        }
     }
 
     @GetMapping("/test")
