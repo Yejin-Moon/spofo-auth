@@ -15,18 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class MemberController {
 
-    private final MemberRepository memberRepository;
     private final MemberService memberService;
 
     @GetMapping("/auth/members/search")
     public Long searchMember(@RequestHeader HttpHeaders httpHeaders) {
         String searchedMember = httpHeaders.getFirst("authorization");
-        Member m = memberRepository.findBySocialId(searchedMember);
-        if (m == null) {
-            throw new IllegalArgumentException("id를 찾을 수 없습니다.");
-        } else {
-            return m.getId();
-        }
+        Member member = memberService.findBySocialId(searchedMember);
+        return member.getId();
     }
 
     @GetMapping("/test")

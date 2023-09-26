@@ -18,7 +18,7 @@ public class ExceptionController {
 
     @ResponseBody
     @ExceptionHandler
-    public ResponseEntity<ErrorResult> invalidRequestHandler(IllegalArgumentException e) {
+    public ResponseEntity<ErrorResult> invalidRequestHandler(RuntimeException e) {
         String errorMessage = e.getMessage();
         ErrorResult errorResult = ErrorResult.builder()
                 .errorCode(BAD_REQUEST)
