@@ -14,10 +14,9 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
 
-    private RestClient restClient;
+    private RestClient restClient = RestClient.builder().build();
 
     public String getStock() {
-        restClient = RestClient.create();
         return restClient.get()
                 .uri("https://www.stock.spofo.net/test/callStock:8080")
                 .retrieve()
@@ -25,7 +24,6 @@ public class MemberService {
     }
 
     public String getPortfolio() {
-        restClient = RestClient.create();
         return restClient.get()
                 .uri("https://www.portfolio.spofo.net/test/callPortfolio:8080")
                 .retrieve()

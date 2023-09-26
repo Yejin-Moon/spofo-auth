@@ -2,10 +2,7 @@ package net.spofo.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.spofo.auth.dto.MemberResponse;
-import net.spofo.auth.entity.Member;
-import net.spofo.auth.repository.MemberRepository;
 import net.spofo.auth.service.MemberService;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,8 +17,8 @@ public class MemberController {
     private final MemberService memberService;
 
     @GetMapping("/auth/members/search")
-    public ResponseEntity<MemberResponse> searchMember(@RequestHeader HttpHeaders httpHeaders) {
-        String searchedId = httpHeaders.getFirst("authorization");
+    public ResponseEntity<MemberResponse> searchMember(
+            @RequestHeader(value = "authorization") String searchedId) {
         MemberResponse memberResponse = memberService.findBySocialId(searchedId);
         return ResponseEntity.ok(memberResponse);
     }
