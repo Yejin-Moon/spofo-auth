@@ -1,6 +1,7 @@
 package net.spofo.auth.service;
 
 import lombok.RequiredArgsConstructor;
+import net.spofo.auth.dto.MemberResponse;
 import net.spofo.auth.entity.Member;
 import net.spofo.auth.exception.NoSocialIdException;
 import net.spofo.auth.repository.MemberRepository;
@@ -31,12 +32,10 @@ public class MemberService {
                 .body(String.class);
     }
 
-    public Member findBySocialId(String socialId) {
-        Member member = memberRepository.findBySocialId(socialId);
-        if (member == null) {
-            throw new NoSocialIdException("id를 찾을 수 없습니다.");
-        } else {
-            return member;
-        }
+    public MemberResponse findBySocialId(String socialId) {
+        Member member = memberRepository.findBySocialId(socialId)
+                .orElseThrow(() -> new NoSocialIdException("id를 찾을 수 없습니다."));
+
+        return MemberResponse.from(member);
     }
 }
