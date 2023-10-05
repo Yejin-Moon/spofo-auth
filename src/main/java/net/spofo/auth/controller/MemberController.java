@@ -1,5 +1,7 @@
 package net.spofo.auth.controller;
 
+import static org.springframework.http.ResponseEntity.ok;
+
 import lombok.RequiredArgsConstructor;
 import net.spofo.auth.dto.response.MemberResponse;
 import net.spofo.auth.dto.request.AddMemberRequest;
@@ -33,9 +35,9 @@ public class MemberController {
             memberService.findBySocialId(request.getSocialId());
         } catch (NoSocialIdException e) {
             MemberResponse savedMember = memberService.save(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedMember);
+            return ok().body(savedMember);
         }
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null); // 이미 있는 회원
+        return ResponseEntity.noContent().build(); // 이미 있는 회원
     }
 
     @GetMapping("/test")
