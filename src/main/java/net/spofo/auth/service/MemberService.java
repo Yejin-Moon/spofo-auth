@@ -1,7 +1,8 @@
 package net.spofo.auth.service;
 
 import lombok.RequiredArgsConstructor;
-import net.spofo.auth.dto.MemberResponse;
+import net.spofo.auth.dto.response.MemberResponse;
+import net.spofo.auth.dto.request.AddMemberRequest;
 import net.spofo.auth.entity.Member;
 import net.spofo.auth.exception.NoSocialIdException;
 import net.spofo.auth.repository.MemberRepository;
@@ -34,6 +35,11 @@ public class MemberService {
         Member member = memberRepository.findBySocialId(socialId)
                 .orElseThrow(() -> new NoSocialIdException("id를 찾을 수 없습니다."));
 
+        return MemberResponse.from(member);
+    }
+
+    public MemberResponse save(AddMemberRequest request) {
+        Member member = memberRepository.save(request.toEntity());
         return MemberResponse.from(member);
     }
 }

@@ -1,4 +1,4 @@
-package net.spofo.auth.dto;
+package net.spofo.auth.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
