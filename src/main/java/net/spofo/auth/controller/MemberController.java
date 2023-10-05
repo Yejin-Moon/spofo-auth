@@ -7,6 +7,7 @@ import net.spofo.auth.dto.response.MemberResponse;
 import net.spofo.auth.dto.request.AddMemberRequest;
 import net.spofo.auth.exception.NoSocialIdException;
 import net.spofo.auth.service.MemberService;
+import net.spofo.auth.service.PublicKeyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+    private final PublicKeyService publicKeyService;
 
     @GetMapping("/auth/members/search")
-    public ResponseEntity<MemberResponse> searchMember(
-            @RequestHeader(value = "authorization") String searchedId) {
-        MemberResponse memberResponse = memberService.findBySocialId(searchedId);
+    public ResponseEntity<MemberResponse> verifyValidity(
+            @RequestHeader(value = "authorization") String token) {
+        MemberResponse memberResponse = publicKeyService.verifySignature(token);
         return ResponseEntity.ok(memberResponse);
     }
 
