@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import net.spofo.auth.dto.response.MemberResponse;
 import net.spofo.auth.entity.PublicKey;
 import net.spofo.auth.exception.InvalidTokenException;
-import net.spofo.auth.exception.NoSocialIdException;
 import net.spofo.auth.repository.PublicKeyRepository;
 import org.json.JSONArray;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +34,23 @@ public class PublicKeyService {
 
     public List<PublicKey> loadPublicKey() {
         return publicKeyRepository.findAll();
+    }
+
+    public MemberResponse verifyToken(String token) {
+        List<PublicKey> findPK = loadPublicKey();
+        DecodedJWT jwtOrigin = JWT.decode(token);
+
+        for (int i = 0; i < findPK.size(); i++) {
+            if (jwtOrigin.getKeyId().equals(findPK.get(i).getPublickey())) {
+                // 토큰에서 id(sub) 가져와서 DB에 저장되어 있는지 확인
+                String socialId = jwtOrigin.getSubject();
+                MemberResponse memberResponse = memberService.findBySocialId(socialId);
+                return memberResponse;
+            }
+        }
+        // 다 돌았는데도 일치하는 공개키가 없다면 공개키 목록을 업데이트 하거나, 서명 실패라고 알려주기
+        getKakaoPublicKeys(token);
+        return null;
     }
 
     public void getKakaoPublicKeys(String token) {
@@ -85,23 +101,6 @@ public class PublicKeyService {
                 .map(PublicKey::new) // 각 요소를 PublicKey 객체로 변환
                 .forEach(this::savePublicKey); // 각 PublicKey를 저장
         return true;
-    }
-
-    public MemberResponse verifyToken(String token) {
-        List<PublicKey> findPK = loadPublicKey();
-        DecodedJWT jwtOrigin = JWT.decode(token);
-
-        for (int i = 0; i < findPK.size(); i++) {
-            if (jwtOrigin.getKeyId().equals(findPK.get(i).getPublickey())) {
-                // 토큰에서 id(sub) 가져와서 DB에 저장되어 있는지 확인
-                String socialId = jwtOrigin.getSubject();
-                MemberResponse memberResponse = memberService.findBySocialId(socialId);
-                return memberResponse;
-            }
-        }
-        // 다 돌았는데도 일치하는 공개키가 없다면 공개키 목록을 업데이트 하거나, 서명 실패라고 알려주기
-        getKakaoPublicKeys(token);
-        return null;
     }
 
     // TODO : 토큰 유효성 검사(만료/발급자/앱키 일치하는지 확인)
