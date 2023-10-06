@@ -25,9 +25,9 @@ public class MemberController {
     private final PublicKeyService publicKeyService;
 
     @GetMapping("/auth/members/search")
-    public ResponseEntity<MemberResponse> verifyValidity(
-            @RequestHeader(value = "authorization") String token) {
-        MemberResponse memberResponse = publicKeyService.verifySignature(token);
+    public ResponseEntity<MemberResponse> verifyValidMember(
+            @RequestHeader("authorization") String token) {
+        MemberResponse memberResponse = publicKeyService.verifyToken(token);
         return ResponseEntity.ok(memberResponse);
     }
 

@@ -8,12 +8,13 @@ import lombok.RequiredArgsConstructor;
 import net.spofo.auth.dto.response.MemberResponse;
 import net.spofo.auth.entity.PublicKey;
 import net.spofo.auth.exception.InvalidTokenException;
+import net.spofo.auth.exception.NoSocialIdException;
 import net.spofo.auth.repository.PublicKeyRepository;
 import org.json.JSONArray;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.json.JSONObject;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 @RequiredArgsConstructor
 @Service
@@ -21,8 +22,8 @@ public class PublicKeyService {
 
     private final MemberService memberService;
     private final PublicKeyRepository publicKeyRepository;
-    private final RestTemplate restTemplate;
-    private final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
+    private RestClient restClient = RestClient.builder().build();
+    private static final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
 
     public PublicKey savePublicKey(PublicKey publicKey) {
         return publicKeyRepository.save(publicKey);
@@ -36,11 +37,14 @@ public class PublicKeyService {
         return publicKeyRepository.findAll();
     }
 
-    public void getKakaoPublicKeys() {
+    public void getKakaoPublicKeys(String token) {
         // 카카오 공개키 목록 가져오기
-        ResponseEntity<String> response = restTemplate.getForEntity(KAKAO_PUBLIC_KEY_URL,
-                String.class);
-        String kidJson = response.getBody();
+        ResponseEntity response = restClient.get()
+                .uri(KAKAO_PUBLIC_KEY_URL)
+                .retrieve()
+                .toEntity(String.class);
+
+        String kidJson = response.getBody().toString();
         List<String> publicKeyList = new ArrayList<>();
         List<PublicKey> storedPublicKeyList = loadPublicKey();
 
@@ -56,10 +60,11 @@ public class PublicKeyService {
                 publicKeyList.add(kid);
             }
         } catch (Exception e) { //JSONExecption
-            e.printStackTrace();
+            throw new InvalidTokenException("잘못된 JSON 입니다.");
         }
         if (!matchPublicKey(publicKeyList, storedPublicKeyList)) {
-            saveNewPublicKey(publicKeyList);
+            boolean isSaved = saveNewPublicKey(publicKeyList);
+            if(isSaved) verifyToken(token);
         }
     }
 
@@ -74,14 +79,15 @@ public class PublicKeyService {
         return false;
     }
 
-    public void saveNewPublicKey(List<String> publicKeyList) {
+    public boolean saveNewPublicKey(List<String> publicKeyList) {
         deleteAllPublicKey();
         publicKeyList.stream()
                 .map(PublicKey::new) // 각 요소를 PublicKey 객체로 변환
                 .forEach(this::savePublicKey); // 각 PublicKey를 저장
+        return true;
     }
 
-    public MemberResponse verifySignature(String token) {
+    public MemberResponse verifyToken(String token) {
         List<PublicKey> findPK = loadPublicKey();
         DecodedJWT jwtOrigin = JWT.decode(token);
 
@@ -94,8 +100,7 @@ public class PublicKeyService {
             }
         }
         // 다 돌았는데도 일치하는 공개키가 없다면 공개키 목록을 업데이트 하거나, 서명 실패라고 알려주기
-        getKakaoPublicKeys();
-        verifySignature(token);
+        getKakaoPublicKeys(token);
         return null;
     }
 

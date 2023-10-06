@@ -21,7 +21,7 @@ public class PublicKey {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 150, nullable = false)
     private String publickey;
 
     @Builder
