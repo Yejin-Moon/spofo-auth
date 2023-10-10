@@ -27,13 +27,15 @@ public class PublicKeyService {
     private final MemberService memberService;
     private final PublicKeyRepository publicKeyRepository;
     private RestClient restClient = RestClient.builder().build();
-    private static final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
 
     @Value("${auth.KAKAO_ISSUER}")
     private String issuer;
 
     @Value("${auth.KAKAO_CLIENT_ID}")
     private String appKey;
+
+    @Value("${auth.KAKAO_PUBLIC_KEY_URL}")
+    private String KAKAO_PUBLIC_KEY_URL;
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
         DecodedJWT jwtOrigin = verifyValidation(token);
