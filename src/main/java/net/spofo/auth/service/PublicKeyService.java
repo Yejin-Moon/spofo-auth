@@ -5,6 +5,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -83,6 +84,7 @@ public class PublicKeyService {
         } catch (Exception e) { //JSONExecption
             throw InvalidJSONException.EXCEPTION;
         }
+
         if (!matchPublicKey(publicKeyList,
                 storedPublicKeyList)) { // 만약 불러온 pk와 저장된 pk가 다르다면 공개키가 업데이트 된 것이므로 DB 업데이트
             saveNewPublicKey(publicKeyList);
