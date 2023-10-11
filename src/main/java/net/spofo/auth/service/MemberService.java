@@ -33,7 +33,7 @@ public class MemberService {
 
     public MemberResponse findBySocialId(String socialId) {
         Member member = memberRepository.findBySocialId(socialId)
-                .orElseThrow(() -> new NoSocialIdException("id를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NoSocialIdException());
 
         return MemberResponse.from(member);
     }

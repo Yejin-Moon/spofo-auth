@@ -39,7 +39,7 @@ public class PublicKeyService {
         if (verifySignature(jwtOrigin) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
             getKakaoPublicKeys(token); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
             if (verifySignature(jwtOrigin) == false) {
-                throw InvalidTokenException.EXCEPTION;
+                throw new InvalidTokenException();
             }
         }
         // 토큰 검증 완료!
@@ -82,7 +82,7 @@ public class PublicKeyService {
                 publicKeyList.add(kid);
             }
         } catch (Exception e) { //JSONExecption
-            throw InvalidJSONException.EXCEPTION;
+            throw new InvalidJSONException();
         }
 
         if (!matchPublicKey(publicKeyList,
@@ -95,7 +95,7 @@ public class PublicKeyService {
         for (int i = 0; i < publicKeyList.size(); i++) {
             for (int j = 0; j < storedPublicKeyList.size(); j++) {
                 if (publicKeyList.get(i).equals(storedPublicKeyList.get(j).getPublickey())) {
-                    throw InvalidTokenException.EXCEPTION;
+                    throw new InvalidTokenException();
                 }
             }
         }
@@ -114,10 +114,10 @@ public class PublicKeyService {
 
         if (!jwtOrigin.getIssuer().equals(issuer)
                 || !jwtOrigin.getAudience().get(0).equals(appKey)) {
-            throw InvalidTokenException.EXCEPTION;
+            throw new InvalidTokenException();
         }
         if (jwtOrigin.getExpiresAt().before(new Date(System.currentTimeMillis()))) {
-            throw ExpiredTokenException.EXCEPTION;
+            throw new ExpiredTokenException();
         }
         return jwtOrigin;
     }

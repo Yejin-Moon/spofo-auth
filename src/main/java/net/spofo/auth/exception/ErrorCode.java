@@ -19,6 +19,9 @@ public enum ErrorCode implements BaseErrorCode {
     @Override
     public ErrorResult getErrorResult() {
         return ErrorResult.builder()
-                .reason(reason).code(code).status(status).build();
+                .reason(reason)
+                .code(code)
+                .status(status)
+                .build();
     }
 }
