@@ -14,28 +14,23 @@ import net.spofo.auth.exception.InvalidTokenException;
 import net.spofo.auth.repository.PublicKeyRepository;
 import org.json.JSONArray;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.json.JSONObject;
 import org.springframework.web.client.RestClient;
 
 @RequiredArgsConstructor
 @Service
-@Component
 public class PublicKeyService {
 
     private final MemberService memberService;
     private final PublicKeyRepository publicKeyRepository;
-    private RestClient restClient = RestClient.builder().build();
+    private final RestClient restClient;
+    private final String issuer = "https://kauth.kakao.com";
+    private final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
 
-    @Value("${auth.KAKAO_ISSUER}")
-    private String issuer;
 
     @Value("${auth.KAKAO_CLIENT_ID}")
     private String appKey;
-
-    @Value("${auth.KAKAO_PUBLIC_KEY_URL}")
-    private String KAKAO_PUBLIC_KEY_URL;
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
         DecodedJWT jwtOrigin = verifyValidation(token);
@@ -88,8 +83,7 @@ public class PublicKeyService {
         } catch (Exception e) { //JSONExecption
             throw new InvalidTokenException("잘못된 JSON 입니다.");
         }
-        if (matchPublicKey(publicKeyList, storedPublicKeyList)
-                == false) { // 만약 불러온 pk와 저장된 pk가 다르다면 공개키가 업데이트 된 것이므로 DB 업데이트
+        if (!matchPublicKey(publicKeyList, storedPublicKeyList)) { // 만약 불러온 pk와 저장된 pk가 다르다면 공개키가 업데이트 된 것이므로 DB 업데이트
             saveNewPublicKey(publicKeyList);
         }
     }
