@@ -29,7 +29,7 @@ public class PublicKeyService {
     private final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
 
 
-    @Value("${auth.KAKAO_CLIENT_ID}")
+    @Value("${auth.kakao.clientid}")
     private String appKey;
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
