@@ -1,8 +1,10 @@
 package net.spofo.auth.exception;
 
-public class InvalidTokenException extends RuntimeException {
+public class InvalidTokenException extends CodeException {
 
-    public InvalidTokenException(String message) {
-        super(message);
+    public static final CodeException EXCEPTION = new InvalidTokenException();
+
+    private InvalidTokenException() {
+        super(ErrorCode.INVALID_TOKEN);
     }
 }

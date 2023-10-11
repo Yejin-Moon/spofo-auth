@@ -1,19 +1,13 @@
 package net.spofo.auth.exception.dto;
 
 import lombok.Builder;
-import lombok.Data;
-import org.springframework.http.HttpStatus;
+import lombok.Getter;
 
-@Data
+@Getter
+@Builder
 public class ErrorResult {
 
-    private final String errorCode;
-    private final String errorMessage;
-
-    @Builder
-    public ErrorResult(HttpStatus errorCode, String errorMessage) {
-        this.errorCode = String.valueOf(errorCode.value());
-        this.errorMessage = errorMessage;
-    }
-
+    private final Integer status;
+    private final String code;
+    private final String reason;
 }

@@ -3,17 +3,21 @@ package net.spofo.auth.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import net.spofo.auth.dto.response.MemberResponse;
-import net.spofo.auth.entity.PublicKey;
-import net.spofo.auth.exception.InvalidTokenException;
-import net.spofo.auth.repository.PublicKeyRepository;
 import org.json.JSONArray;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.json.JSONObject;
 import org.springframework.web.client.RestClient;
+import net.spofo.auth.dto.response.MemberResponse;
+import net.spofo.auth.entity.PublicKey;
+import net.spofo.auth.repository.PublicKeyRepository;
+import net.spofo.auth.exception.ExpiredTokenException;
+import net.spofo.auth.exception.InvalidTokenException;
+import net.spofo.auth.exception.InvalidJSONException;
 
 @RequiredArgsConstructor
 @Service
@@ -21,36 +25,37 @@ public class PublicKeyService {
 
     private final MemberService memberService;
     private final PublicKeyRepository publicKeyRepository;
-    private RestClient restClient = RestClient.builder().build();
-    private static final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
+    private final RestClient restClient;
+    private final String issuer = "https://kauth.kakao.com";
+    private final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
 
-    public PublicKey savePublicKey(PublicKey publicKey) {
-        return publicKeyRepository.save(publicKey);
-    }
+    @Value("${auth.kakao.clientid}")
+    private String appKey;
 
-    public void deleteAllPublicKey() {
-        publicKeyRepository.deleteAllInBatch();
-    }
+    public MemberResponse verifyToken(String token) { // 토큰 검증
+        DecodedJWT jwtOrigin = verifyValidation(token);
 
-    public List<PublicKey> loadPublicKey() {
-        return publicKeyRepository.findAll();
-    }
-
-    public MemberResponse verifyToken(String token) {
-        List<PublicKey> findPK = loadPublicKey();
-        DecodedJWT jwtOrigin = JWT.decode(token);
-
-        for (int i = 0; i < findPK.size(); i++) {
-            if (jwtOrigin.getKeyId().equals(findPK.get(i).getPublickey())) {
-                // 토큰에서 id(sub) 가져와서 DB에 저장되어 있는지 확인
-                String socialId = jwtOrigin.getSubject();
-                MemberResponse memberResponse = memberService.findBySocialId(socialId);
-                return memberResponse;
+        if (verifySignature(jwtOrigin) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
+            getKakaoPublicKeys(token); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
+            if (verifySignature(jwtOrigin) == false) {
+                throw InvalidTokenException.EXCEPTION;
             }
         }
-        // 다 돌았는데도 일치하는 공개키가 없다면 공개키 목록을 업데이트 하거나, 서명 실패라고 알려주기
-        getKakaoPublicKeys(token);
-        return null;
+        // 토큰 검증 완료!
+        String socialId = jwtOrigin.getSubject();
+        MemberResponse memberResponse = memberService.findBySocialId(socialId);
+        return memberResponse;
+    }
+
+    public boolean verifySignature(DecodedJWT jwtOrigin) { // 토큰의 공개키와 비교하여 서명 검증
+        List<PublicKey> storedPublicKey = loadPublicKey();
+
+        for (int i = 0; i < storedPublicKey.size(); i++) {
+            if (jwtOrigin.getKeyId().equals(storedPublicKey.get(i).getPublickey())) {
+                return true; // 토큰의 공개키가 유효함.
+            }
+        }
+        return false;
     }
 
     public void getKakaoPublicKeys(String token) {
@@ -76,32 +81,54 @@ public class PublicKeyService {
                 publicKeyList.add(kid);
             }
         } catch (Exception e) { //JSONExecption
-            throw new InvalidTokenException("잘못된 JSON 입니다.");
+            throw InvalidJSONException.EXCEPTION;
         }
-        if (!matchPublicKey(publicKeyList, storedPublicKeyList)) {
-            boolean isSaved = saveNewPublicKey(publicKeyList);
-            if(isSaved) verifyToken(token);
+        if (!matchPublicKey(publicKeyList,
+                storedPublicKeyList)) { // 만약 불러온 pk와 저장된 pk가 다르다면 공개키가 업데이트 된 것이므로 DB 업데이트
+            saveNewPublicKey(publicKeyList);
         }
     }
 
     public boolean matchPublicKey(List<String> publicKeyList, List<PublicKey> storedPublicKeyList) {
         for (int i = 0; i < publicKeyList.size(); i++) {
             for (int j = 0; j < storedPublicKeyList.size(); j++) {
-                if (publicKeyList.get(i).equals(storedPublicKeyList.get(j))) {
-                    throw new InvalidTokenException("유효하지 않은 토큰입니다.");
+                if (publicKeyList.get(i).equals(storedPublicKeyList.get(j).getPublickey())) {
+                    throw InvalidTokenException.EXCEPTION;
                 }
             }
         }
         return false;
     }
 
-    public boolean saveNewPublicKey(List<String> publicKeyList) {
+    public void saveNewPublicKey(List<String> publicKeyList) {
         deleteAllPublicKey();
         publicKeyList.stream()
                 .map(PublicKey::new) // 각 요소를 PublicKey 객체로 변환
                 .forEach(this::savePublicKey); // 각 PublicKey를 저장
-        return true;
     }
 
-    // TODO : 토큰 유효성 검사(만료/발급자/앱키 일치하는지 확인)
+    public DecodedJWT verifyValidation(String token) {
+        DecodedJWT jwtOrigin = JWT.decode(token);
+
+        if (!jwtOrigin.getIssuer().equals(issuer)
+                || !jwtOrigin.getAudience().get(0).equals(appKey)) {
+            throw InvalidTokenException.EXCEPTION;
+        }
+        if (jwtOrigin.getExpiresAt().before(new Date(System.currentTimeMillis()))) {
+            throw ExpiredTokenException.EXCEPTION;
+        }
+        return jwtOrigin;
+    }
+
+    public PublicKey savePublicKey(PublicKey publicKey) {
+        return publicKeyRepository.save(publicKey);
+    }
+
+    public void deleteAllPublicKey() {
+        publicKeyRepository.deleteAllInBatch();
+    }
+
+    public List<PublicKey> loadPublicKey() {
+        return publicKeyRepository.findAll();
+    }
 }
