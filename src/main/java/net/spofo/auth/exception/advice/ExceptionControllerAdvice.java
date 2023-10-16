@@ -1,25 +1,25 @@
 package net.spofo.auth.exception.advice;
 
-import lombok.RequiredArgsConstructor;
-import net.spofo.auth.exception.CodeException;
+import static org.springframework.http.ResponseEntity.ok;
+import static org.springframework.http.ResponseEntity.status;
+
+import net.spofo.auth.exception.AuthServerException;
+import net.spofo.auth.exception.InvalidToken;
 import net.spofo.auth.exception.dto.ErrorResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class ExceptionControllerAdvice {
     @ExceptionHandler
-    public ResponseEntity<ErrorResult> invalidRequestHandler(CodeException e) {
-        int status = e.getErrorResult().getStatus();
-        String errorCode = e.getErrorResult().getCode();
-        String errorMsg = e.getErrorResult().getReason();
+    public ResponseEntity<ErrorResult> commonExHandler(AuthServerException e) {
         ErrorResult errorResult = ErrorResult.builder()
-                .status(status)
-                .code(errorCode)
-                .reason(errorMsg)
+                .errorCode(e.getStatusCode())
+                .errorMessage(e.getMessage())
                 .build();
-        return ResponseEntity.status(status).body(errorResult);
+
+        return status(e.getStatusCode()).body(errorResult);
     }
+
 }
