@@ -23,8 +23,15 @@ public class Member {
     private String socialId;
 
     @Builder
-    public Member(String platform, String socialId) {
+    private Member(String platform, String socialId) {
         this.platform = platform;
         this.socialId = socialId;
+    }
+
+    public static Member from(String platform, String socialId) {
+        return Member.builder()
+                .platform(platform)
+                .socialId(socialId)
+                .build();
     }
 }

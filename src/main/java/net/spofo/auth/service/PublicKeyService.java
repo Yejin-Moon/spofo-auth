@@ -57,7 +57,7 @@ public class PublicKeyService {
         return memberResponse;
     }
 
-    public boolean matchPublicKey(String token) { // 토큰의 공개키와 비교하여 서명 검증
+    private boolean matchPublicKey(String token) { // 토큰의 공개키와 비교하여 서명 검증
         List<PublicKeyInfo> storedPublicKey = loadPublicKeys();
         DecodedJWT jwtOrigin = JWT.decode(token);
         for (int i = 0; i < storedPublicKey.size(); i++) {
@@ -69,7 +69,7 @@ public class PublicKeyService {
         return false;
     }
 
-    public void getKakaoPublicKeys() {
+    private void getKakaoPublicKeys() {
         // 카카오 공개키 목록 가져오기
         ResponseEntity response = restClient.get()
                 .uri(KAKAO_PUBLIC_KEY_URL)
@@ -109,7 +109,7 @@ public class PublicKeyService {
         }
     }
 
-    public boolean comparePublicKey(List<PublicKeyInfo> publicKeyList,
+    private boolean comparePublicKey(List<PublicKeyInfo> publicKeyList,
             List<PublicKeyInfo> storedPublicKeyList) {
         for (int i = 0; i < publicKeyList.size(); i++) {
             for (int j = 0; j < storedPublicKeyList.size(); j++) {
@@ -121,17 +121,17 @@ public class PublicKeyService {
         return false;
     }
 
-    public void saveNewPublicKey(List<PublicKeyInfo> publicKeyList) {
+    private void saveNewPublicKey(List<PublicKeyInfo> publicKeyList) {
         publicKeyRepository.deleteAllInBatch();
 
         List<PublicKey> publicKeys = publicKeyList.stream()
-                .map(info -> new PublicKey(info.getKid(), info.getModulus(), info.getExponent()))
+                .map(info -> PublicKey.from(info.getKid(), info.getModulus(), info.getExponent()))
                 .collect(Collectors.toList());
 
         publicKeyRepository.saveAll(publicKeys);
     }
 
-    public DecodedJWT verifyValidation(String token) {
+    private DecodedJWT verifyValidation(String token) {
         DecodedJWT jwtOrigin = JWT.decode(token);
 
         if (jwtOrigin.getExpiresAt().before(new Date(System.currentTimeMillis()))) {
@@ -144,7 +144,7 @@ public class PublicKeyService {
         return jwtOrigin;
     }
 
-    public void verfySignature(String token) {
+    private void verfySignature(String token) {
         PublicKey publicKey = getNE(token);
         try {
             Jwts.parserBuilder()
@@ -178,7 +178,7 @@ public class PublicKeyService {
         return publicKeyRepository.findByPublickey(kid);
     }
 
-    public List<PublicKeyInfo> loadPublicKeys() {
+    private List<PublicKeyInfo> loadPublicKeys() {
         return publicKeyRepository.findAll()
                 .stream()
                 .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(),
