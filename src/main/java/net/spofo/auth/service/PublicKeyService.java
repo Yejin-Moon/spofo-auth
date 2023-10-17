@@ -44,9 +44,9 @@ public class PublicKeyService {
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
         DecodedJWT jwtOrigin = verifyValidation(token); // 토큰 유효성 검증
-        if (matchPublicKey(token) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
+        if (!matchPublicKey(token)) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
             getKakaoPublicKeys(); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
-            if (matchPublicKey(token) == false) {
+            if (!matchPublicKey(token)) {
                 throw new InvalidToken("토큰이 유효하지 않습니다.(공개키 불일치)");
             }
         }

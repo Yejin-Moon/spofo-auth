@@ -19,7 +19,7 @@ public class PublicKey {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 256, nullable = false)
     private String publicKey;
 
     @Column(length = 500, nullable = false)
