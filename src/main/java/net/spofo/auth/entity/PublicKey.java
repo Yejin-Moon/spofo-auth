@@ -24,17 +24,17 @@ public class PublicKey {
     private String publickey;
 
     @Column(length = 500, nullable = false)
-    private String n;
+    private String modulus;
     @Column(length = 20, nullable = false)
-    private String e;
+    private String exponent;
 
 
 
     @Builder
-    public PublicKey(String publickey, String n, String e) {
+    public PublicKey(String publickey, String modulus, String exponent) {
         this.publickey = publickey;
-        this.n=n;
-        this.e=e;
+        this.modulus=modulus;
+        this.exponent=exponent;
     }
 
 }

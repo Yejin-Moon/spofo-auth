@@ -91,12 +91,12 @@ public class PublicKeyService {
             for (int i = 0; i < keysArray.length(); i++) {
                 JSONObject keyObject = keysArray.getJSONObject(i);
                 String kid = keyObject.getString("kid");
-                String n = keyObject.getString("n");
-                String e = keyObject.getString("e");
+                String modulus = keyObject.getString("n");
+                String exponent = keyObject.getString("e");
                 PublicKeyInfo publicKeyInfo = PublicKeyInfo.builder()
                         .kid(kid)
-                        .n(n)
-                        .e(e)
+                        .modulus(modulus)
+                        .exponent(exponent)
                         .build();
 
                 publicKeyList.add(publicKeyInfo);
@@ -127,7 +127,7 @@ public class PublicKeyService {
         publicKeyRepository.deleteAllInBatch();
 
         List<PublicKey> publicKeys = publicKeyList.stream()
-                .map(info -> new PublicKey(info.getKid(), info.getN(), info.getE()))
+                .map(info -> new PublicKey(info.getKid(), info.getModulus(), info.getExponent()))
                 .collect(Collectors.toList());
 
         publicKeyRepository.saveAll(publicKeys);
@@ -165,8 +165,8 @@ public class PublicKeyService {
     private Key getRSAPublicKey(PublicKey publicKey)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        byte[] decodeN = Base64.getUrlDecoder().decode(publicKey.getN());
-        byte[] decodeE = Base64.getUrlDecoder().decode(publicKey.getE());
+        byte[] decodeN = Base64.getUrlDecoder().decode(publicKey.getModulus());
+        byte[] decodeE = Base64.getUrlDecoder().decode(publicKey.getExponent());
         BigInteger n = new BigInteger(1, decodeN);
         BigInteger e = new BigInteger(1, decodeE);
 
@@ -183,8 +183,8 @@ public class PublicKeyService {
     public List<PublicKeyInfo> loadPublicKeys() {
         return publicKeyRepository.findAll()
                 .stream()
-                .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(), publicKey.getN(),
-                        publicKey.getE()))
+                .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(), publicKey.getModulus(),
+                        publicKey.getExponent()))
                 .collect(Collectors.toList());
     }
 
@@ -193,7 +193,7 @@ public class PublicKeyService {
     private static class PublicKeyInfo {
 
         String kid;
-        String n;
-        String e;
+        String modulus;
+        String exponent;
     }
 }
