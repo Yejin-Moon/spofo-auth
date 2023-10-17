@@ -47,9 +47,9 @@ public class PublicKeyService {
     public MemberResponse verifyToken(String token) { // 토큰 검증
         DecodedJWT jwtOrigin = verifyValidation(token);
 
-        if (verifySignature(token) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
+        if (matchPublicKey(token) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
             getKakaoPublicKeys(); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
-            if (verifySignature(token) == false) {
+            if (matchPublicKey(token) == false) {
                 throw new InvalidToken("토큰이 유효하지 않습니다.(공개키 불일치)");
             }
         }
@@ -59,12 +59,12 @@ public class PublicKeyService {
         return memberResponse;
     }
 
-    public boolean verifySignature(String token) { // 토큰의 공개키와 비교하여 서명 검증
+    public boolean matchPublicKey(String token) { // 토큰의 공개키와 비교하여 서명 검증
         List<PublicKeyInfo> storedPublicKey = loadPublicKeys();
         DecodedJWT jwtOrigin = JWT.decode(token);
         for (int i = 0; i < storedPublicKey.size(); i++) {
             if (jwtOrigin.getKeyId().equals(storedPublicKey.get(i).getKid())) {
-                getOIDCTokenJws(token); // 퍼블릭 키 만들어서 검증해야함
+                verfySignature(token); // 퍼블릭 키 만들어서 검증해야함
                 return true; // 토큰의 공개키가 유효함.
             }
         }
@@ -105,13 +105,13 @@ public class PublicKeyService {
             throw new InvalidToken("JSON이 유효하지 않습니다.");
         }
 
-        if (!matchPublicKey(publicKeyList,
+        if (!comparePublicKey(publicKeyList,
                 storedPublicKeyList)) { // 만약 불러온 pk와 저장된 pk가 다르다면 공개키가 업데이트 된 것이므로 DB 업데이트
             saveNewPublicKey(publicKeyList);
         }
     }
 
-    public boolean matchPublicKey(List<PublicKeyInfo> publicKeyList,
+    public boolean comparePublicKey(List<PublicKeyInfo> publicKeyList,
             List<PublicKeyInfo> storedPublicKeyList) {
         for (int i = 0; i < publicKeyList.size(); i++) {
             for (int j = 0; j < storedPublicKeyList.size(); j++) {
@@ -146,7 +146,7 @@ public class PublicKeyService {
         return jwtOrigin;
     }
 
-    public Jws<Claims> getOIDCTokenJws(String token) {
+    public Jws<Claims> verfySignature(String token) {
         PublicKey publicKey = getNE(token);
         try {
             return Jwts.parserBuilder()
