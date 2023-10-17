@@ -2,8 +2,6 @@ package net.spofo.auth.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.SignatureException;
 import java.math.BigInteger;
@@ -146,10 +144,10 @@ public class PublicKeyService {
         return jwtOrigin;
     }
 
-    public Jws<Claims> verfySignature(String token) {
+    public void verfySignature(String token) {
         PublicKey publicKey = getNE(token);
         try {
-            return Jwts.parserBuilder()
+            Jwts.parserBuilder()
                     .setSigningKey(getRSAPublicKey(publicKey))
                     .build()
                     .parseClaimsJws(token);
@@ -183,7 +181,8 @@ public class PublicKeyService {
     public List<PublicKeyInfo> loadPublicKeys() {
         return publicKeyRepository.findAll()
                 .stream()
-                .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(), publicKey.getModulus(),
+                .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(),
+                        publicKey.getModulus(),
                         publicKey.getExponent()))
                 .collect(Collectors.toList());
     }
