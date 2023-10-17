@@ -16,17 +16,25 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "publickey")
 public class PublicKey {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 150, nullable = false)
+    @Column(length = 256, nullable = false)
     private String publickey;
 
+    @Column(length = 500, nullable = false)
+    private String n;
+    @Column(length = 20, nullable = false)
+    private String e;
+
+
+
     @Builder
-    public PublicKey(String publickey) {
+    public PublicKey(String publickey, String n, String e) {
         this.publickey = publickey;
+        this.n=n;
+        this.e=e;
     }
 
 }
