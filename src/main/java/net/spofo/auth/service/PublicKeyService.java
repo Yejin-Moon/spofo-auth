@@ -29,8 +29,8 @@ import net.spofo.auth.entity.PublicKey;
 import net.spofo.auth.repository.PublicKeyRepository;
 import net.spofo.auth.exception.InvalidToken;
 
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class PublicKeyService {
 
     private final MemberService memberService;
@@ -43,8 +43,7 @@ public class PublicKeyService {
     private String appKey;
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
-        DecodedJWT jwtOrigin = verifyValidation(token);
-
+        DecodedJWT jwtOrigin = verifyValidation(token); // 토큰 유효성 검증
         if (matchPublicKey(token) == false) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
             getKakaoPublicKeys(); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
             if (matchPublicKey(token) == false) {
@@ -96,7 +95,6 @@ public class PublicKeyService {
                         .modulus(modulus)
                         .exponent(exponent)
                         .build();
-
                 publicKeyList.add(publicKeyInfo);
             }
         } catch (Exception e) { //JSONExecption
@@ -134,7 +132,7 @@ public class PublicKeyService {
     private DecodedJWT verifyValidation(String token) {
         DecodedJWT jwtOrigin = JWT.decode(token);
 
-        if (jwtOrigin.getExpiresAt().before(new Date(System.currentTimeMillis()))) {
+        if (jwtOrigin.getExpiresAt().before(new Date())) {
             throw new InvalidToken("토큰이 만료되었습니다.");
         }
         if (!jwtOrigin.getIssuer().equals(issuer)
@@ -175,13 +173,13 @@ public class PublicKeyService {
     private PublicKey getNE(String token) {
         DecodedJWT jwt = JWT.decode(token);
         String kid = jwt.getKeyId();
-        return publicKeyRepository.findByPublickey(kid);
+        return publicKeyRepository.findByPublicKey(kid);
     }
 
     private List<PublicKeyInfo> loadPublicKeys() {
         return publicKeyRepository.findAll()
                 .stream()
-                .map(publicKey -> new PublicKeyInfo(publicKey.getPublickey(),
+                .map(publicKey -> new PublicKeyInfo(publicKey.getPublicKey(),
                         publicKey.getModulus(),
                         publicKey.getExponent()))
                 .collect(Collectors.toList());
