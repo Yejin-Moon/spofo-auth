@@ -5,28 +5,41 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
-@Table(name = "publickey")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PublicKey {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 150, nullable = false)
+    @Column(length = 256, nullable = false)
     private String publickey;
 
+    @Column(length = 500, nullable = false)
+    private String modulus;
+
+    @Column(length = 20, nullable = false)
+    private String exponent;
+
     @Builder
-    public PublicKey(String publickey) {
-        this.publickey = publickey;
+    private PublicKey(String publicKey, String modulus, String exponent) {
+        this.publickey = publicKey;
+        this.modulus = modulus;
+        this.exponent = exponent;
     }
 
+    public static PublicKey from(String publicKey, String modulus, String exponent) {
+        return PublicKey.builder()
+                .publicKey(publicKey)
+                .modulus(modulus)
+                .exponent(exponent)
+                .build();
+    }
 }
