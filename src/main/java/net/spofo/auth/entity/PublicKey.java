@@ -25,7 +25,7 @@ public class PublicKey {
     @Column(length = 500, nullable = false)
     private String modulus;
 
-    @Column(length = 200, nullable = false)
+    @Column(length = 20, nullable = false)
     private String exponent;
 
     @Builder
