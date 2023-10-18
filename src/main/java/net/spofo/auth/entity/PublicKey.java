@@ -1,14 +1,14 @@
 package net.spofo.auth.entity;
 
+import lombok.Builder;
+import lombok.Getter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
@@ -20,7 +20,7 @@ public class PublicKey {
     private Long id;
 
     @Column(length = 256, nullable = false)
-    private String publickey;
+    private String publicKey;
 
     @Column(length = 500, nullable = false)
     private String modulus;
@@ -29,8 +29,8 @@ public class PublicKey {
     private String exponent;
 
     @Builder
-    private PublicKey(String publicKey, String modulus, String exponent) {
-        this.publickey = publicKey;
+    public PublicKey(String publicKey, String modulus, String exponent) {
+        this.publicKey = publicKey;
         this.modulus = modulus;
         this.exponent = exponent;
     }
