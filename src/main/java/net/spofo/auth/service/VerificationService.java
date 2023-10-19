@@ -31,7 +31,7 @@ import net.spofo.auth.exception.InvalidToken;
 
 @Service
 @RequiredArgsConstructor
-public class PublicKeyService {
+public class VerificationService {
 
     private final MemberService memberService;
     private final PublicKeyRepository publicKeyRepository;
@@ -61,7 +61,7 @@ public class PublicKeyService {
         DecodedJWT jwtOrigin = JWT.decode(token);
         for (int i = 0; i < storedPublicKey.size(); i++) {
             if (jwtOrigin.getKeyId().equals(storedPublicKey.get(i).getKid())) {
-                verfySignature(token); // 퍼블릭 키 만들어서 검증해야함
+                verifySignature(token); // 퍼블릭 키 만들어서 검증해야함
                 return true; // 토큰의 공개키가 유효함.
             }
         }
@@ -142,7 +142,7 @@ public class PublicKeyService {
         return jwtOrigin;
     }
 
-    private void verfySignature(String token) {
+    private void verifySignature(String token) {
         PublicKey publicKey = getNE(token);
         try {
             Jwts.parserBuilder()
