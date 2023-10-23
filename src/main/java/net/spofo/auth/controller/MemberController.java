@@ -25,6 +25,9 @@ public class MemberController {
     @GetMapping("/auth/members/search")
     public ResponseEntity<MemberResponse> verifyValidMember(
             @RequestHeader("authorization") String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.replace("Bearer ", "");
+        }
         MemberResponse memberResponse = verificationService.verifyToken(token);
         return ResponseEntity.ok(memberResponse);
     }
