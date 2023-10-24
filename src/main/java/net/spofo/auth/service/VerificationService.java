@@ -38,11 +38,18 @@ public class VerificationService {
     private final RestClient restClient;
     private final String issuer = "https://kauth.kakao.com";
     private final String KAKAO_PUBLIC_KEY_URL = "https://kauth.kakao.com/.well-known/jwks.json";
+    private final String prefix = "Bearer ";
 
     @Value("${auth.kakao.clientid}")
     private String appKey;
 
     public MemberResponse verifyToken(String token) { // 토큰 검증
+        if (!isValidToken(token)) {
+            throw new InvalidToken("토큰이 유효하지 않습니다.");
+        }
+
+        token = token.replace(prefix, "");
+
         DecodedJWT jwtOrigin = verifyValidation(token); // 토큰 유효성 검증
         if (!matchPublicKey(token)) { // 토큰의 공개키가 유효하지 않다면 DB를 업데이트하거나 실패라고 알려주거나
             getKakaoPublicKeys(); // 예외 발생 없이 잘 돌아오면 정상적인 토큰. (db가 업데이트 된 상태이므로 한 번 더 서명 검증 필요)
@@ -54,6 +61,10 @@ public class VerificationService {
         String socialId = jwtOrigin.getSubject();
         MemberResponse memberResponse = memberService.findBySocialId(socialId);
         return memberResponse;
+    }
+
+    private boolean isValidToken(String token) {
+        return token != null && token.startsWith(prefix);
     }
 
     private boolean matchPublicKey(String token) { // 토큰의 공개키와 비교하여 서명 검증
